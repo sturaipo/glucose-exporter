@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -46,13 +47,18 @@ type LibreLinkClient struct {
 }
 
 func WithCredentials(userId string, token string) func(*LibreLinkClient) {
+	return WithExpiringCredentials(userId, token, time.Time{})
+}
+
+func WithExpiringCredentials(userId string, token string, expiry time.Time) func(*LibreLinkClient) {
 	return func(c *LibreLinkClient) {
-			c.creds = &librelinkCreds{
-			ticket: AuthTicket{
-				Token: token,
+		c.creds = NewLibreLinkCreds(
+			userId,
+			AuthTicket{
+				Token:   token,
+				Expires: expiry,
 			},
-			id: userId,
-		}
+		)
 	}
 }
 
