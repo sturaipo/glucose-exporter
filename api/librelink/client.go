@@ -127,7 +127,7 @@ func (c LibreLinkClient) prepareRequest(ctx context.Context, method string, endp
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("product", "llu.android")
-	req.Header.Set("version", "4.12.0")
+	req.Header.Set("version", "4.16.0")
 	req.Header.Set("cache-control", "no-cache")
 	req.Header.Set("connection", "Keep-Alive")
 
