@@ -88,22 +88,28 @@ func NewLibreLinkClient(user string, password string, options ...func(*LibreLink
 }
 
 func (c *LibreLinkClient) handleRedirect(resp LibreLinkResp) (bool, error) {
+	c.logger.Debug("Checking for redirect in response")
 	redirect := RedirecResponse{}
 	if err := getPayload(resp, &redirect); err != nil {
+		c.logger.Debug("no redirect needed")
 		return false, nil
 	}
 	if !redirect.Redirect {
+		c.logger.Debug("No redirect requested")
 		return false, nil
 	}
 
 	if redirect.Region == "" {
+		c.logger.Error("Redirect requested but no region provided")
 		return false, fmt.Errorf("redirect requested but no region provided")
 	}
 
+	c.logger.Info("Handling redirect", zap.String("region", redirect.Region))
 	baseUrl, err := url.Parse(getUrl(redirect.Region))
 	if err != nil {
 		return false, fmt.Errorf("failed to parse redirect URL: %w", err)
 	}
+	c.logger.Info("Redirect URL parsed successfully", zap.String("url", baseUrl.String()))
 	c.baseUrl = baseUrl
 	return true, nil
 }
@@ -161,7 +167,9 @@ func (c *LibreLinkClient) doRequest(ctx context.Context, method string, endpoint
 		return LibreLinkResp{}, fmt.Errorf("request failed: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	logger.Debug("Request completed", zap.Int("status", resp.StatusCode))
 	if resp.StatusCode != http.StatusOK {
@@ -237,7 +245,7 @@ func (c *LibreLinkClient) GetConnections(ctx context.Context) ([]Connection, err
 	return connections, nil
 }
 
-func (c *LibreLinkClient) getGraphData(ctx context.Context, connectionId string) (GraphData, error) {
+func (c *LibreLinkClient) GetGraphData(ctx context.Context, connectionId string) (GraphData, error) {
 	endpoint := fmt.Sprintf("llu/connections/%s/graph", connectionId)
 	resp, err := c.doRequest(ctx, http.MethodGet, endpoint, nil)
 
@@ -254,7 +262,7 @@ func (c *LibreLinkClient) getGraphData(ctx context.Context, connectionId string)
 }
 
 func (c *LibreLinkClient) GetLatestReading(ctx context.Context, connectionId string) (GlucoseMeasurement, error) {
-	graphData, err := c.getGraphData(ctx, connectionId)
+	graphData, err := c.GetGraphData(ctx, connectionId)
 	if err != nil {
 		return GlucoseMeasurement{}, err
 	}

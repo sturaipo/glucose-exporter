@@ -88,7 +88,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	options := []func(*librelink.LibreLinkClient){
 		librelink.WithLogger(logger),
